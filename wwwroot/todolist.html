@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IndexedDB CRUD Todo List</title>
+  <script src="https://www.gstatic.com/antigravity/web/dev/tailwindcss.min.js"></script>
+  <style>
+    /* Modern fallback styling & custom touches */
+    :root {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0f172a;
+        --card-bg: #1e293b;
+        --text: #f8fafc;
+        --muted: #94a3b8;
+        --border: #334155;
+        --primary: #3b82f6;
+        --primary-hover: #60a5fa;
+      }
+    }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    .custom-card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border);
+    }
+    .badge-high { background-color: #fee2e2; color: #dc2626; border: 1px solid #fecaca; }
+    .badge-medium { background-color: #fef3c7; color: #d97706; border: 1px solid #fde68a; }
+    .badge-low { background-color: #dcfce7; color: #16a34a; border: 1px solid #bbf7d0; }
+    .badge-cat { background-color: #ede9fe; color: #7c3aed; border: 1px solid #ddd6fe; }
+    @media (prefers-color-scheme: dark) {
+      .badge-high { background-color: #451a1a; color: #f87171; border-color: #7f1d1d; }
+      .badge-medium { background-color: #452b11; color: #fbbf24; border-color: #78350f; }
+      .badge-low { background-color: #143521; color: #4ade80; border-color: #14532d; }
+      .badge-cat { background-color: #2e1065; color: #c084fc; border-color: #581c87; }
+    }
+  </style>
+</head>
+<body class="min-h-screen py-8 px-4 sm:px-6 lg:px-8 transition-colors duration-200">
+  <div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Header Section -->
+    <header class="custom-card rounded-2xl p-6 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div>
+        <div class="flex items-center gap-3">
+          <div class="p-2.5 bg-blue-500/10 text-blue-600 dark:text-blue-400 rounded-xl">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold tracking-tight">Todo List App</h1>
+        </div>
+        <p class="text-sm text-slate-500 dark:text-slate-400 mt-1">Full CRUD storage powered by browser IndexedDB</p>
+      </div>
+      <div class="flex items-center gap-2 self-stretch sm:self-auto justify-end">
+        <span id="storageBadge" class="text-xs px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          IndexedDB Ready
+        </span>
+      </div>
+    </header>
+
+    <!-- Create Form (CREATE) -->
+    <section class="custom-card rounded-2xl p-6 shadow-sm">
+      <h2 class="text-lg font-semibold mb-4 flex items-center gap-2">
+        <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+        </svg>
+        Add New Task
+      </h2>
+      <form id="todoForm" class="space-y-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <!-- Title -->
+          <div class="md:col-span-2">
+            <label for="taskTitle" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Task Title *</label>
+            <input type="text" id="taskTitle" required placeholder="What needs to be done?"
+              class="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+          </div>
+          <!-- Description -->
+          <div class="md:col-span-2">
+            <label for="taskDescription" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Description (Optional)</label>
+            <textarea id="taskDescription" rows="2" placeholder="Add extra details, notes, or subtasks..."
+              class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition resize-none"></textarea>
+          </div>
+          <!-- Category -->
+          <div>
+            <label for="taskCategory" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Category</label>
+            <select id="taskCategory"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+              <option value="Personal" class="text-black dark:text-white dark:bg-slate-800">Personal</option>
+              <option value="Work" class="text-black dark:text-white dark:bg-slate-800">Work</option>
+              <option value="Shopping" class="text-black dark:text-white dark:bg-slate-800">Shopping</option>
+              <option value="Health" class="text-black dark:text-white dark:bg-slate-800">Health</option>
+              <option value="Learning" class="text-black dark:text-white dark:bg-slate-800">Learning</option>
+            </select>
+          </div>
+          <!-- Priority -->
+          <div>
+            <label for="taskPriority" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Priority</label>
+            <select id="taskPriority"
+              class="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+              <option value="Medium" class="text-black dark:text-white dark:bg-slate-800">Medium</option>
+              <option value="High" class="text-black dark:text-white dark:bg-slate-800">High</option>
+              <option value="Low" class="text-black dark:text-white dark:bg-slate-800">Low</option>
+            </select>
+          </div>
+          <!-- Due Date -->
+          <div>
+            <label for="taskDueDate" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Due Date</label>
+            <input type="date" id="taskDueDate"
+              class="w-full px-3.5 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+          </div>
+          <!-- Submit Button -->
+          <div class="flex items-end">
+            <button type="submit"
+              class="w-full py-2.5 px-5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-sm transition flex items-center justify-center gap-2">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+              </svg>
+              Save to IndexedDB
+            </button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- Progress & Statistics -->
+    <section class="custom-card rounded-2xl p-4 sm:p-6 shadow-sm space-y-3">
+      <div class="flex flex-wrap items-center justify-between gap-3 text-sm">
+        <div class="flex items-center gap-4">
+          <div>Total: <span id="statTotal" class="font-bold">0</span></div>
+          <div>Active: <span id="statActive" class="font-bold text-amber-500">0</span></div>
+          <div>Completed: <span id="statCompleted" class="font-bold text-emerald-500">0</span></div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span id="statPercent" class="text-xs font-semibold text-slate-500 dark:text-slate-400">0% Done</span>
+          <button id="clearCompletedBtn" type="button"
+            class="text-xs text-red-500 hover:text-red-600 underline font-medium cursor-pointer ml-2 transition">
+            Clear Completed
+          </button>
+        </div>
+      </div>
+      <div class="w-full bg-slate-200 dark:bg-slate-700 h-2 rounded-full overflow-hidden">
+        <div id="progressBar" class="bg-blue-600 h-full rounded-full transition-all duration-300" style="width: 0%"></div>
+      </div>
+    </section>
+
+    <!-- Filter & Search Controls (READ Filter) -->
+    <section class="custom-card rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3 items-stretch md:items-center justify-between">
+      <!-- Search Input -->
+      <div class="relative flex-1">
+        <svg class="w-4 h-4 absolute left-3.5 top-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search tasks..."
+          class="w-full pl-10 pr-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+      </div>
+
+      <div class="flex flex-wrap items-center gap-2">
+        <!-- Status Filter Tabs -->
+        <div class="inline-flex rounded-xl p-1 bg-slate-100 dark:bg-slate-800 text-xs font-medium">
+          <button type="button" data-filter="all" class="filter-tab px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400">All</button>
+          <button type="button" data-filter="active" class="filter-tab px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white">Active</button>
+          <button type="button" data-filter="completed" class="filter-tab px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white">Completed</button>
+        </div>
+
+        <!-- Priority Filter -->
+        <select id="filterPriority"
+          class="px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-xs focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <option value="all" class="text-black dark:text-white dark:bg-slate-800">All Priorities</option>
+          <option value="High" class="text-black dark:text-white dark:bg-slate-800">High</option>
+          <option value="Medium" class="text-black dark:text-white dark:bg-slate-800">Medium</option>
+          <option value="Low" class="text-black dark:text-white dark:bg-slate-800">Low</option>
+        </select>
+      </div>
+    </section>
+
+    <!-- Task List (READ / UPDATE / DELETE) -->
+    <main id="todoList" class="space-y-3" aria-live="polite">
+      <!-- Generated items will appear here -->
+    </main>
+
+    <!-- Empty State -->
+    <div id="emptyState" class="hidden custom-card rounded-2xl p-12 text-center shadow-sm">
+      <div class="w-16 h-16 mx-auto mb-3 text-slate-400 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800">
+        <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+        </svg>
+      </div>
+      <h3 class="text-base font-semibold">No tasks found</h3>
+      <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Get started by adding a task above or adjusting your search filters.</p>
+    </div>
+
+  </div>
+
+  <!-- Edit Task Modal (UPDATE) -->
+  <div id="editModal" class="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden">
+    <div class="custom-card w-full max-w-lg rounded-2xl p-6 shadow-xl space-y-4">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-700 pb-3">
+        <h3 class="text-lg font-bold">Edit Task</h3>
+        <button id="closeEditModal" type="button" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+      <form id="editForm" class="space-y-4">
+        <input type="hidden" id="editId">
+        <div>
+          <label for="editTitle" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Title *</label>
+          <input type="text" id="editTitle" required
+            class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition">
+        </div>
+        <div>
+          <label for="editDescription" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Description</label>
+          <textarea id="editDescription" rows="2"
+            class="w-full px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent focus:ring-2 focus:ring-blue-500 focus:outline-none transition resize-none"></textarea>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label for="editCategory" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Category</label>
+            <select id="editCategory"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <option value="Personal" class="text-black dark:text-white dark:bg-slate-800">Personal</option>
+              <option value="Work" class="text-black dark:text-white dark:bg-slate-800">Work</option>
+              <option value="Shopping" class="text-black dark:text-white dark:bg-slate-800">Shopping</option>
+              <option value="Health" class="text-black dark:text-white dark:bg-slate-800">Health</option>
+              <option value="Learning" class="text-black dark:text-white dark:bg-slate-800">Learning</option>
+            </select>
+          </div>
+          <div>
+            <label for="editPriority" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Priority</label>
+            <select id="editPriority"
+              class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+              <option value="High" class="text-black dark:text-white dark:bg-slate-800">High</option>
+              <option value="Medium" class="text-black dark:text-white dark:bg-slate-800">Medium</option>
+              <option value="Low" class="text-black dark:text-white dark:bg-slate-800">Low</option>
+            </select>
+          </div>
+          <div>
+            <label for="editDueDate" class="block text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-1">Due Date</label>
+            <input type="date" id="editDueDate"
+              class="w-full px-3 py-1.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-transparent text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          </div>
+        </div>
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+          <button type="button" id="cancelEditBtn"
+            class="px-4 py-2 text-sm font-medium rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition">
+            Cancel
+          </button>
+          <button type="submit"
+            class="px-5 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm transition">
+            Save Changes
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+    <div class="px-4 py-3 rounded-xl shadow-lg text-sm font-medium flex items-center gap-2 bg-slate-900 text-white dark:bg-white dark:text-slate-900">
+      <span id="toastMessage">Action completed!</span>
+    </div>
+  </div>
+
+  <!-- IndexedDB Script Logic -->
+  <script>
+    /**
+     * IndexedDB CRUD Database Layer
+     */
+    class TodoDB {
+      constructor(dbName = 'TodoAppDB', version = 1) {
+        this.dbName = dbName;
+        this.version = version;
+        this.storeName = 'todos';
+        this.db = null;
+      }
+
+      // Initialize / Open Database
+      async init() {
+        return new Promise((resolve, reject) => {
+          const request = indexedDB.open(this.dbName, this.version);
+
+          request.onupgradeneeded = (event) => {
+            const db = event.target.result;
+            if (!db.objectStoreNames.contains(this.storeName)) {
+              const store = db.createObjectStore(this.storeName, {
+                keyPath: 'id',
+                autoIncrement: true
+              });
+              // Create indexes for efficient querying
+              store.createIndex('completed', 'completed', { unique: false });
+              store.createIndex('priority', 'priority', { unique: false });
+              store.createIndex('category', 'category', { unique: false });
+              store.createIndex('createdAt', 'createdAt', { unique: false });
+            }
+          };
+
+          request.onsuccess = (event) => {
+            this.db = event.target.result;
+            resolve(this.db);
+          };
+
+          request.onerror = (event) => {
+            reject('IndexedDB Error: ' + event.target.errorCode);
+          };
+        });
+      }
+
+      // CREATE: Add new todo
+      async add(todo) {
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction([this.storeName], 'readwrite');
+          const store = transaction.objectStore(this.storeName);
+          const request = store.add({
+            ...todo,
+            createdAt: new Date().toISOString()
+          });
+
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // READ: Get all todos
+      async getAll() {
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction([this.storeName], 'readonly');
+          const store = transaction.objectStore(this.storeName);
+          const request = store.getAll();
+
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // READ: Get single todo by ID
+      async getById(id) {
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction([this.storeName], 'readonly');
+          const store = transaction.objectStore(this.storeName);
+          const request = store.get(Number(id));
+
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // UPDATE: Update existing todo
+      async update(todo) {
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction([this.storeName], 'readwrite');
+          const store = transaction.objectStore(this.storeName);
+          const request = store.put(todo);
+
+          request.onsuccess = () => resolve(request.result);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // DELETE: Delete single todo by ID
+      async delete(id) {
+        return new Promise((resolve, reject) => {
+          const transaction = this.db.transaction([this.storeName], 'readwrite');
+          const store = transaction.objectStore(this.storeName);
+          const request = store.delete(Number(id));
+
+          request.onsuccess = () => resolve(true);
+          request.onerror = () => reject(request.error);
+        });
+      }
+
+      // BATCH DELETE: Remove all completed todos
+      async clearCompleted() {
+        const all = await this.getAll();
+        const completed = all.filter(t => t.completed);
+        const transaction = this.db.transaction([this.storeName], 'readwrite');
+        const store = transaction.objectStore(this.storeName);
+
+        for (const item of completed) {
+          store.delete(item.id);
+        }
+
+        return new Promise((resolve, reject) => {
+          transaction.oncomplete = () => resolve(completed.length);
+          transaction.onerror = () => reject(transaction.error);
+        });
+      }
+    }
+
+    /**
+     * UI & Application Controller
+     */
+    const db = new TodoDB();
+    let currentFilter = 'all';
+    let currentPriorityFilter = 'all';
+    let currentSearch = '';
+
+    // DOM Elements
+    const todoForm = document.getElementById('todoForm');
+    const todoList = document.getElementById('todoList');
+    const emptyState = document.getElementById('emptyState');
+    const searchInput = document.getElementById('searchInput');
+    const filterTabs = document.querySelectorAll('.filter-tab');
+    const filterPriority = document.getElementById('filterPriority');
+    const clearCompletedBtn = document.getElementById('clearCompletedBtn');
+
+    // Stats
+    const statTotal = document.getElementById('statTotal');
+    const statActive = document.getElementById('statActive');
+    const statCompleted = document.getElementById('statCompleted');
+    const statPercent = document.getElementById('statPercent');
+    const progressBar = document.getElementById('progressBar');
+
+    // Edit Modal
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    const editId = document.getElementById('editId');
+    const editTitle = document.getElementById('editTitle');
+    const editDescription = document.getElementById('editDescription');
+    const editCategory = document.getElementById('editCategory');
+    const editPriority = document.getElementById('editPriority');
+    const editDueDate = document.getElementById('editDueDate');
+    const closeEditModal = document.getElementById('closeEditModal');
+    const cancelEditBtn = document.getElementById('cancelEditBtn');
+
+    // Toast
+    const toast = document.getElementById('toast');
+    const toastMessage = document.getElementById('toastMessage');
+
+    function showToast(msg) {
+      toastMessage.textContent = msg;
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 2500);
+    }
+
+    // Render Todos
+    async function loadAndRender() {
+      try {
+        const todos = await db.getAll();
+
+        // Calculate statistics
+        const total = todos.length;
+        const completedCount = todos.filter(t => t.completed).length;
+        const activeCount = total - completedCount;
+        const percent = total > 0 ? Math.round((completedCount / total) * 100) : 0;
+
+        statTotal.textContent = total;
+        statActive.textContent = activeCount;
+        statCompleted.textContent = completedCount;
+        statPercent.textContent = `${percent}% Done`;
+        progressBar.style.width = `${percent}%`;
+
+        // Apply filters
+        let filtered = todos.filter(t => {
+          if (currentFilter === 'active' && t.completed) return false;
+          if (currentFilter === 'completed' && !t.completed) return false;
+          if (currentPriorityFilter !== 'all' && t.priority !== currentPriorityFilter) return false;
+          if (currentSearch) {
+            const query = currentSearch.toLowerCase();
+            const matchTitle = t.title.toLowerCase().includes(query);
+            const matchDesc = t.description ? t.description.toLowerCase().includes(query) : false;
+            if (!matchTitle && !matchDesc) return false;
+          }
+          return true;
+        });
+
+        // Sort: newest first
+        filtered.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+
+        todoList.innerHTML = '';
+        if (filtered.length === 0) {
+          emptyState.classList.remove('hidden');
+        } else {
+          emptyState.classList.add('hidden');
+          filtered.forEach(todo => {
+            todoList.appendChild(createTodoElement(todo));
+          });
+        }
+      } catch (err) {
+        console.error('Error rendering todos:', err);
+      }
+    }
+
+    function createTodoElement(todo) {
+      const card = document.createElement('div');
+      card.className = `custom-card rounded-2xl p-4 sm:p-5 shadow-sm transition hover:shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 ${
+        todo.completed ? 'opacity-60' : ''
+      }`;
+
+      // Badges
+      const priorityClass =
+        todo.priority === 'High' ? 'badge-high' :
+        todo.priority === 'Medium' ? 'badge-medium' : 'badge-low';
+
+      card.innerHTML = `
+        <div class="flex items-start gap-3 flex-1 min-w-0">
+          <input type="checkbox" ${todo.completed ? 'checked' : ''} data-id="${todo.id}"
+            class="toggle-checkbox mt-1 w-5 h-5 rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer">
+          <div class="space-y-1 min-w-0">
+            <div class="flex flex-wrap items-center gap-2">
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium ${priorityClass}">${todo.priority}</span>
+              <span class="text-xs px-2 py-0.5 rounded-full font-medium badge-cat">${todo.category}</span>
+              ${todo.dueDate ? `<span class="text-xs text-slate-400">📅 ${todo.dueDate}</span>` : ''}
+            </div>
+            <h4 class="font-medium text-base leading-tight break-words ${todo.completed ? 'line-through text-slate-400' : ''}">
+              ${escapeHtml(todo.title)}
+            </h4>
+            ${todo.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 break-words">${escapeHtml(todo.description)}</p>` : ''}
+          </div>
+        </div>
+        <div class="flex items-center gap-2 self-end sm:self-center">
+          <button data-action="edit" data-id="${todo.id}"
+            class="p-2 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Edit Task">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+            </svg>
+          </button>
+          <button data-action="delete" data-id="${todo.id}"
+            class="p-2 text-slate-500 hover:text-red-600 dark:hover:text-red-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition" title="Delete Task">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      `;
+
+      return card;
+    }
+
+    function escapeHtml(text) {
+      if (!text) return '';
+      return text.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    // EVENT: Form Submit (CREATE)
+    todoForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const title = document.getElementById('taskTitle').value.trim();
+      const description = document.getElementById('taskDescription').value.trim();
+      const category = document.getElementById('taskCategory').value;
+      const priority = document.getElementById('taskPriority').value;
+      const dueDate = document.getElementById('taskDueDate').value;
+
+      if (!title) return;
+
+      const newTodo = {
+        title,
+        description,
+        category,
+        priority,
+        dueDate,
+        completed: false
+      };
+
+      await db.add(newTodo);
+      todoForm.reset();
+      showToast('Task added to IndexedDB!');
+      await loadAndRender();
+    });
+
+    // EVENT: Delegate clicks (TOGGLE, EDIT, DELETE)
+    todoList.addEventListener('click', async (e) => {
+      // Toggle Complete
+      if (e.target.classList.contains('toggle-checkbox')) {
+        const id = Number(e.target.dataset.id);
+        const todo = await db.getById(id);
+        if (todo) {
+          todo.completed = e.target.checked;
+          await db.update(todo);
+          showToast(todo.completed ? 'Task marked as completed!' : 'Task restored to active!');
+          await loadAndRender();
+        }
+        return;
+      }
+
+      // Check actions on buttons or inside icons
+      const btn = e.target.closest('button[data-action]');
+      if (!btn) return;
+
+      const action = btn.dataset.action;
+      const id = Number(btn.dataset.id);
+
+      if (action === 'delete') {
+        if (confirm('Are you sure you want to delete this task?')) {
+          await db.delete(id);
+          showToast('Task deleted from IndexedDB!');
+          await loadAndRender();
+        }
+      } else if (action === 'edit') {
+        const todo = await db.getById(id);
+        if (todo) {
+          editId.value = todo.id;
+          editTitle.value = todo.title;
+          editDescription.value = todo.description || '';
+          editCategory.value = todo.category || 'Personal';
+          editPriority.value = todo.priority || 'Medium';
+          editDueDate.value = todo.dueDate || '';
+          editModal.classList.remove('hidden');
+        }
+      }
+    });
+
+    // EVENT: Save Edit (UPDATE)
+    editForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const id = Number(editId.value);
+      const todo = await db.getById(id);
+      if (!todo) return;
+
+      todo.title = editTitle.value.trim();
+      todo.description = editDescription.value.trim();
+      todo.category = editCategory.value;
+      todo.priority = editPriority.value;
+      todo.dueDate = editDueDate.value;
+
+      await db.update(todo);
+      editModal.classList.add('hidden');
+      showToast('Task updated in IndexedDB!');
+      await loadAndRender();
+    });
+
+    // Modal Close
+    closeEditModal.addEventListener('click', () => editModal.classList.add('hidden'));
+    cancelEditBtn.addEventListener('click', () => editModal.classList.add('hidden'));
+
+    // Clear Completed (DELETE BATCH)
+    clearCompletedBtn.addEventListener('click', async () => {
+      const removed = await db.clearCompleted();
+      if (removed > 0) {
+        showToast(`Cleared ${removed} completed tasks!`);
+        await loadAndRender();
+      } else {
+        showToast('No completed tasks to clear.');
+      }
+    });
+
+    // Filter Tabs
+    filterTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        filterTabs.forEach(t => {
+          t.className = 'filter-tab px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-900 dark:hover:text-white';
+        });
+        tab.className = 'filter-tab px-3 py-1.5 rounded-lg bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400';
+        currentFilter = tab.dataset.filter;
+        loadAndRender();
+      });
+    });
+
+    // Priority Filter
+    filterPriority.addEventListener('change', (e) => {
+      currentPriorityFilter = e.target.value;
+      loadAndRender();
+    });
+
+    // Search Input
+    searchInput.addEventListener('input', (e) => {
+      currentSearch = e.target.value.trim();
+      loadAndRender();
+    });
+
+    // Initial Startup
+    window.addEventListener('DOMContentLoaded', async () => {
+      await db.init();
+      // Add default sample tasks if database is empty on first run
+      const existing = await db.getAll();
+      if (existing.length === 0) {
+        await db.add({
+          title: 'Learn IndexedDB CRUD Operations',
+          description: 'Explore ObjectStore, Index, Readwrite Transactions, and keyPath.',
+          category: 'Learning',
+          priority: 'High',
+          dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0],
+          completed: false
+        });
+        await db.add({
+          title: 'Build modern responsive UI',
+          description: 'Add Tailwind CSS layout with dark mode and filter tabs.',
+          category: 'Work',
+          priority: 'Medium',
+          dueDate: '',
+          completed: true
+        });
+      }
+      await loadAndRender();
+    });
+  </script>
+</body>
+</html>
