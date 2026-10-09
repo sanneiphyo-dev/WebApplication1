@@ -1,15 +1,20 @@
-using System.Diagnostics;
+using ContosoUniversity.AppDbContextModels;
+using ContosoUniversity.Models.ViewModel;
 using Microsoft.AspNetCore.Mvc;
-using WebApplication1.Models;
+using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 namespace WebApplication1.Controllers
 {
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
+        private readonly AppDbContext _context;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, AppDbContext context)
         {
+            _logger = logger;
+            _context = context;
         }
 
         [HttpGet]
@@ -41,9 +46,20 @@ namespace WebApplication1.Controllers
             return View();
         }
 
-        public IActionResult Students()
+        public async Task<IActionResult> Students()
         {
-            return View();
+            var students = await _context.Students 
+                .AsNoTracking()
+                .Select(s => new StudentViewModel
+                {
+                    Id = s.Id,
+                    FirstName = s.FirstName,
+                    LastName = s.LastName,
+                    EnrollmentDate = s.EnrollmentDate
+                })
+                .ToListAsync();
+
+            return View(students); 
         }
 
 
@@ -63,10 +79,10 @@ namespace WebApplication1.Controllers
         }
 
 
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+        //[ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
+        //public IActionResult Error()
+        //{
+        //    return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
+        //}
     }
 }

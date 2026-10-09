@@ -1,0 +1,53 @@
+@model ContosoUniversity.AppDbContextModels.Enrollment
+
+@{
+    ViewData["Title"] = "Create Enrollment";
+}
+
+<h2>Create Enrollment</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Create">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            
+            <div class="mb-3">
+                <label asp-for="CourseId" class="form-label">Course</label>
+                <select asp-for="CourseId" class="form-select" asp-items="ViewBag.CourseId" required>
+                    <option value="">-- Select Course --</option>
+                </select>
+                <span asp-validation-for="CourseId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="StudentId" class="form-label">Student</label>
+                <select asp-for="StudentId" class="form-select" asp-items="ViewBag.StudentId" required>
+                    <option value="">-- Select Student --</option>
+                </select>
+                <span asp-validation-for="StudentId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Grade" class="form-label">Grade</label>
+                <select asp-for="Grade" class="form-select">
+                    <option value="">-- None / In Progress --</option>
+                    @foreach (Grade g in Enum.GetValues(typeof(Grade)))
+                    {
+                        <option value="@((int)g)">@g</option>
+                    }
+                </select>
+                <span asp-validation-for="Grade" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <input type="submit" value="Create" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

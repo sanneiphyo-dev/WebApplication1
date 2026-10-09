@@ -1,0 +1,58 @@
+@model IEnumerable<ContosoUniversity.AppDbContextModels.Enrollment>
+
+@{
+    ViewData["Title"] = "Enrollments";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Enrollments</h2>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus"></i> Create New Enrollment</a>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-bordered table-striped table-hover align-middle">
+        <thead class="table-dark">
+            <tr>
+                <th>Enrollment ID</th>
+                <th>Course</th>
+                <th>Student</th>
+                <th>Grade</th>
+                <th style="width: 220px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (Model != null && Model.Any())
+            {
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td>@item.EnrollmentId</td>
+                        <td>@item.Course.Title</td>
+                        <td>@item.Student.FirstName @item.Student.LastName</td>
+                        <td>
+                            @if (item.Grade.HasValue && Enum.IsDefined(typeof(Grade), item.Grade.Value))
+                            {
+                                <span class="badge bg-success">@((Grade)item.Grade.Value)</span>
+                            }
+                            else
+                            {
+                                <span class="badge bg-secondary">No Grade</span>
+                            }
+                        </td>
+                        <td>
+                            <a asp-action="Edit" asp-route-id="@item.EnrollmentId" class="btn btn-sm btn-outline-warning">Edit</a>
+                            <a asp-action="Details" asp-route-id="@item.EnrollmentId" class="btn btn-sm btn-outline-info">Details</a>
+                            <a asp-action="Delete" asp-route-id="@item.EnrollmentId" class="btn btn-sm btn-outline-danger">Delete</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="5" class="text-center text-muted">No enrollments found.</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

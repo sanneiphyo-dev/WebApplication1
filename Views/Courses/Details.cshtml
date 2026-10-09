@@ -1,0 +1,54 @@
+@model ContosoUniversity.AppDbContextModels.Course
+
+@{
+    ViewData["Title"] = "Course Details";
+}
+
+<h2>Course Details</h2>
+<hr />
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">Course ID</dt>
+        <dd class="col-sm-9">@Model.CourseId</dd>
+
+        <dt class="col-sm-3">Title</dt>
+        <dd class="col-sm-9">@Model.Title</dd>
+
+        <dt class="col-sm-3">Credits</dt>
+        <dd class="col-sm-9">@Model.Credits</dd>
+
+        <dt class="col-sm-3">Enrolled Students</dt>
+        <dd class="col-sm-9">
+            @if (Model.Enrollments != null && Model.Enrollments.Any())
+            {
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Student Name</th>
+                            <th>Grade</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model.Enrollments)
+                        {
+                            <tr>
+                                <td>@item.Student.FirstName @item.Student.LastName</td>
+                                <td>@(item.Grade.HasValue ? ((Grade)item.Grade.Value).ToString() : "No grade")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            }
+            else
+            {
+                <span class="text-muted">No students enrolled.</span>
+            }
+        </dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.CourseId" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+</div>

@@ -1,0 +1,50 @@
+@model ContosoUniversity.AppDbContextModels.Enrollment
+
+@{
+    ViewData["Title"] = "Edit Enrollment";
+}
+
+<h2>Edit Enrollment</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-6">
+        <form asp-action="Edit">
+            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <input type="hidden" asp-for="EnrollmentId" />
+
+            <div class="mb-3">
+                <label asp-for="CourseId" class="form-label">Course</label>
+                <select asp-for="CourseId" class="form-select" asp-items="ViewBag.CourseId" required></select>
+                <span asp-validation-for="CourseId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="StudentId" class="form-label">Student</label>
+                <select asp-for="StudentId" class="form-select" asp-items="ViewBag.StudentId" required></select>
+                <span asp-validation-for="StudentId" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Grade" class="form-label">Grade</label>
+                <select asp-for="Grade" class="form-select">
+                    <option value="">-- None / In Progress --</option>
+                    @foreach (Grade g in Enum.GetValues(typeof(Grade)))
+                    {
+                        <option value="@((int)g)" selected="@(Model.Grade == (int)g)">@g</option>
+                    }
+                </select>
+                <span asp-validation-for="Grade" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <input type="submit" value="Save" class="btn btn-primary" />
+                <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+}

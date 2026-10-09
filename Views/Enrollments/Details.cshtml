@@ -1,0 +1,38 @@
+@model ContosoUniversity.AppDbContextModels.Enrollment
+
+@{
+    ViewData["Title"] = "Enrollment Details";
+}
+
+<h2>Enrollment Details</h2>
+<hr />
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">Enrollment ID</dt>
+        <dd class="col-sm-9">@Model.EnrollmentId</dd>
+
+        <dt class="col-sm-3">Course</dt>
+        <dd class="col-sm-9">@Model.Course.Title (ID: @Model.CourseId)</dd>
+
+        <dt class="col-sm-3">Student</dt>
+        <dd class="col-sm-9">@Model.Student.FirstName @Model.Student.LastName (ID: @Model.StudentId)</dd>
+
+        <dt class="col-sm-3">Grade</dt>
+        <dd class="col-sm-9">
+            @if (Model.Grade.HasValue && Enum.IsDefined(typeof(Grade), Model.Grade.Value))
+            {
+                <span class="badge bg-success">@((Grade)Model.Grade.Value)</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">No Grade</span>
+            }
+        </dd>
+    </dl>
+</div>
+
+<div>
+    <a asp-action="Edit" asp-route-id="@Model.EnrollmentId" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+</div>

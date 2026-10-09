@@ -1,0 +1,40 @@
+@model ContosoUniversity.AppDbContextModels.Enrollment
+
+@{
+    ViewData["Title"] = "Delete Enrollment";
+}
+
+<h2 class="text-danger">Delete Enrollment</h2>
+<h4 class="text-secondary">Are you sure you want to delete this enrollment?</h4>
+<hr />
+
+<div>
+    <dl class="row">
+        <dt class="col-sm-3">Enrollment ID</dt>
+        <dd class="col-sm-9">@Model.EnrollmentId</dd>
+
+        <dt class="col-sm-3">Course</dt>
+        <dd class="col-sm-9">@Model.Course.Title</dd>
+
+        <dt class="col-sm-3">Student</dt>
+        <dd class="col-sm-9">@Model.Student.FirstName @Model.Student.LastName</dd>
+
+        <dt class="col-sm-3">Grade</dt>
+        <dd class="col-sm-9">
+            @if (Model.Grade.HasValue && Enum.IsDefined(typeof(Grade), Model.Grade.Value))
+            {
+                <span class="badge bg-success">@((Grade)Model.Grade.Value)</span>
+            }
+            else
+            {
+                <span class="badge bg-secondary">No Grade</span>
+            }
+        </dd>
+    </dl>
+
+    <form asp-action="Delete">
+        <input type="hidden" asp-for="EnrollmentId" />
+        <input type="submit" value="Delete" class="btn btn-danger" />
+        <a asp-action="Index" class="btn btn-secondary ms-2">Back to List</a>
+    </form>
+</div>
